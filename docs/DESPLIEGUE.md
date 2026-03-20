@@ -120,7 +120,9 @@ php artisan view:clear
 
 ## 8. Nginx (referencia)
 
-Hay un ejemplo en **`deploy/nginx-site.example.conf`**. Ajusta `server_name`, `root` y rutas de logs/cerificados SSL (Let's Encrypt, etc.).
+Hay un ejemplo genérico en **`deploy/nginx-site.example.conf`**.
+
+Para el subdominio **`cdgf.tod.com.co`** y ruta **`/usr/share/nginx/html/cdgf`**, usa **`deploy/nginx-cdgf.tod.com.co.conf`** y la guía paso a paso **`deploy/CDGF-SERVIDOR.md`**.
 
 Para HTTPS, usa **Certbot** u otro emisor; fuerza `APP_URL` con `https`.
 
