@@ -1,5 +1,7 @@
 # Despliegue: **https://tod.com.co/cdgf/**
 
+> **Guía larga paso a paso (principiantes, puertos, convivencia con otras apps):** [`docs/DESPLIEGUE-PASO-A-PASO.md`](../docs/DESPLIEGUE-PASO-A-PASO.md)
+
 La app vive en **`/usr/share/nginx/html/cdgf`** y se expone como **subcarpeta** del dominio principal (**no** subdominio).
 
 ## Variables `.env` (obligatorio para subcarpeta)

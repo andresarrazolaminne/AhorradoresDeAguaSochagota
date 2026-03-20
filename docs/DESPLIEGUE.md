@@ -1,5 +1,7 @@
 # Despliegue en servidor (Laravel 11 + Vite + MySQL)
 
+**Paso a paso detallado (neofitos, servidor con varias apps, puertos):** [DESPLIEGUE-PASO-A-PASO.md](./DESPLIEGUE-PASO-A-PASO.md)
+
 Guía para llevar **Sochagota / Cazadores de Gastos Fantasma** a producción en un VPS o hosting con PHP y acceso SSH.
 
 ## Requisitos del servidor
