@@ -1,126 +1,77 @@
-# Despliegue en servidor: **cdgf.tod.com.co** → `/usr/share/nginx/html/cdgf`
+# Despliegue: **https://tod.com.co/cdgf/**
 
-Ruta del código Laravel: **`/usr/share/nginx/html/cdgf`**  
-Subdominio: **`cdgf.tod.com.co`** (DNS tipo **A** o **CNAME** hacia el servidor).  
-Nginx debe servir **`/usr/share/nginx/html/cdgf/public`**, no la carpeta padre `cdgf`.
+La app vive en **`/usr/share/nginx/html/cdgf`** y se expone como **subcarpeta** del dominio principal (**no** subdominio).
 
-## 1. Código en el servidor
+## Variables `.env` (obligatorio para subcarpeta)
 
-```bash
-cd /usr/share/nginx/html
-sudo git clone https://github.com/andresarrazolaminne/AhorradoresDeAguaSochagota.git cdgf
-cd cdgf
+```env
+APP_URL=https://tod.com.co/cdgf
+APP_PATH_PREFIX=cdgf
+APP_ENV=production
+APP_DEBUG=false
 ```
 
-Si la carpeta ya existe, usa `git pull` dentro de `cdgf`.
+- **`APP_URL`**: URL pública exacta del proyecto (sin barra final, o con ella según tu convención; Laravel suele usar sin barra final).
+- **`APP_PATH_PREFIX`**: solo el segmento de ruta (`cdgf`). Debe coincidir con la carpeta en la URL.
 
-## 2. Dependencias y assets
+## Front (Vite) — importante
+
+`vite.config.js` usa **`APP_PATH_PREFIX`** para el `base` de los assets. En el servidor, **antes de `npm run build`**, el `.env` debe tener ya `APP_PATH_PREFIX=cdgf`. Si compilas sin eso, los CSS/JS pedirían `/build/...` en lugar de `/cdgf/build/...`.
 
 ```bash
 cd /usr/share/nginx/html/cdgf
-composer install --no-dev --optimize-autoloader
+# .env con APP_PATH_PREFIX=cdgf y APP_URL=https://tod.com.co/cdgf
 npm ci
 npm run build
 ```
 
-Si no hay Node en el servidor, ejecuta `npm ci && npm run build` en tu PC y sube la carpeta **`public/build/`**.
+## Nginx
 
-## 3. Entorno Laravel
-
-```bash
-cp .env.example .env
-nano .env   # o vim
-```
-
-Mínimo en producción:
-
-```env
-APP_NAME=Sochagota
-APP_ENV=production
-APP_DEBUG=false
-APP_URL=https://cdgf.tod.com.co
-
-DB_CONNECTION=mysql
-DB_HOST=...
-DB_PORT=3306
-DB_DATABASE=...
-DB_USERNAME=...
-DB_PASSWORD="..."
-
-SESSION_DRIVER=file
-CACHE_STORE=file
-QUEUE_CONNECTION=sync
-```
-
-```bash
-php artisan key:generate
-php artisan migrate --force
-php artisan storage:link || true
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-```
-
-## 4. Permisos
-
-Propietario al usuario con el que corre **PHP-FPM** (`nginx` en RHEL/Alma o `www-data` en Debian/Ubuntu):
-
-```bash
-# Ejemplo Alma/Rocky/CentOS (usuario nginx):
-sudo chown -R nginx:nginx /usr/share/nginx/html/cdgf/storage /usr/share/nginx/html/cdgf/bootstrap/cache
-
-# Ejemplo Debian/Ubuntu:
-# sudo chown -R www-data:www-data /usr/share/nginx/html/cdgf/storage /usr/share/nginx/html/cdgf/bootstrap/cache
-
-sudo chmod -R ug+rwx /usr/share/nginx/html/cdgf/storage /usr/share/nginx/html/cdgf/bootstrap/cache
-```
-
-## 5. Nginx
-
-1. Copia `deploy/nginx-cdgf.tod.com.co.conf` al servidor.
-2. Ajusta el **`upstream php-fpm-cdgf`**: deja **una sola** línea `server unix:...` que exista en tu máquina, por ejemplo:
+1. El sitio **`tod.com.co`** ya tiene su `server { ... }`.
+2. Dentro de ese mismo `server` (HTTP y/o HTTPS), **incluye** el snippet:
 
    ```bash
-   ls /var/run/php/
-   # o
-   ls /run/php-fpm/
+   sudo cp deploy/nginx-cdgf.tod.com.co.conf /etc/nginx/snippets/cdgf-laravel.conf
    ```
 
-3. Instala el archivo, por ejemplo:
+   Y en el `server` de tod.com.co:
+
+   ```nginx
+   include /etc/nginx/snippets/cdgf-laravel.conf;
+   ```
+
+3. Ajusta el **upstream `cdgf-php`** (socket o puerto de PHP-FPM de tu máquina).
+4. Prueba y recarga:
 
    ```bash
-   sudo cp nginx-cdgf.tod.com.co.conf /etc/nginx/conf.d/cdgf.tod.com.co.conf
    sudo nginx -t && sudo systemctl reload nginx
    ```
 
-4. HTTPS:
+Si el mismo `server` ya tiene un `location ~ \.php$` genérico, incluye **`cdgf-laravel.conf` antes** de ese bloque (o reordena), para que las peticiones a `/cdgf/index.php` no las atrape el bloque equivocado.
 
-   ```bash
-   sudo certbot --nginx -d cdgf.tod.com.co
-   ```
+El archivo define:
 
-   Después confirma que `APP_URL=https://cdgf.tod.com.co` y ejecuta `php artisan config:cache`.
+- Redirección `/cdgf` → `/cdgf/`
+- `alias` a `…/cdgf/public/`
+- Reescritura a **`index.php`** con el resto del path (compatible con Laravel en subcarpeta)
 
-## 6. DNS
+**Certificado SSL**: si `tod.com.co` ya tiene HTTPS, **cdgf** usa el mismo `server` y el mismo certificado; no hace falta un host extra.
 
-En el panel de **tod.com.co**, crea un registro para **`cdgf`**:
+## Resto igual que antes
 
-- **A** → IP pública del servidor, o  
-- **CNAME** → hostname del servidor, según tu proveedor.
+- `composer install --no-dev --optimize-autoloader`
+- `php artisan key:generate` (si es instalación nueva)
+- `php artisan migrate --force`
+- `php artisan storage:link` si aplica
+- `php artisan config:cache && php artisan route:cache && php artisan view:cache`
+- Permisos de escritura en `storage/` y `bootstrap/cache/` para el usuario de PHP-FPM
 
-## 7. Comprobación
+## Comprobaciones
 
-- `https://cdgf.tod.com.co/` → inicio  
-- `https://cdgf.tod.com.co/registro` → formulario  
-- Registro de prueba → `/registro/expectativa`
+- `https://tod.com.co/cdgf/` — inicio  
+- `https://tod.com.co/cdgf/registro` — formulario  
+- Registro de prueba → `/cdgf/registro/expectativa`
 
-## SELinux (solo si está activo en RHEL/CentOS/Alma)
+## Desarrollo local
 
-Si ves errores 403 o PHP no escribe en `storage`:
-
-```bash
-sudo chcon -R -t httpd_sys_rw_content_t /usr/share/nginx/html/cdgf/storage
-sudo chcon -R -t httpd_sys_rw_content_t /usr/share/nginx/html/cdgf/bootstrap/cache
-```
-
-(Ajusta según políticas de tu host; en muchos servidores ya viene resuelto.)
+En `.env` local deja **`APP_PATH_PREFIX` vacío** y `APP_URL=http://127.0.0.1:8000`; ejecuta `npm run build` o `npm run dev` sin prefijo.

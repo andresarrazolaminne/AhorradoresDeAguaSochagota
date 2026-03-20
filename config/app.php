@@ -56,6 +56,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | URL path prefix (subcarpeta pública, sin slashes)
+    |--------------------------------------------------------------------------
+    |
+    | Producción en https://tod.com.co/cdgf → APP_PATH_PREFIX=cdgf
+    | Desarrollo local con php artisan serve → dejar vacío.
+    |
+    */
+
+    'path_prefix' => trim(trim((string) env('APP_PATH_PREFIX', '')), '/'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

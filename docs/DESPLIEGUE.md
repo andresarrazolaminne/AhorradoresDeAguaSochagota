@@ -122,7 +122,7 @@ php artisan view:clear
 
 Hay un ejemplo genérico en **`deploy/nginx-site.example.conf`**.
 
-Para el subdominio **`cdgf.tod.com.co`** y ruta **`/usr/share/nginx/html/cdgf`**, usa **`deploy/nginx-cdgf.tod.com.co.conf`** y la guía paso a paso **`deploy/CDGF-SERVIDOR.md`**.
+Para **`https://tod.com.co/cdgf/`** (subcarpeta, sin subdominio), usa el snippet **`deploy/nginx-cdgf.tod.com.co.conf`** dentro del `server` de **tod.com.co** y la guía **`deploy/CDGF-SERVIDOR.md`** (`APP_URL` + `APP_PATH_PREFIX=cdgf`, y `npm run build` con ese `.env`).
 
 Para HTTPS, usa **Certbot** u otro emisor; fuerza `APP_URL` con `https`.
 
